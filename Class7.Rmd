@@ -1,0 +1,67 @@
+---
+title: "Day 7"
+output: github_document
+---
+
+* hand back exams
+* talk about exams
+* CH 6
+* CH 7 (Thursday)
+
+
+## CH 6 - Linear Models under Data Transformations
+
+```{r}
+knitr::opts_chunk$set(echo=T, comment = NA, message = F, warning = F)
+library(tidyverse)
+```
+
+```{r}
+set.seed(1234)
+beta1 <- 2
+beta2 <- .5
+N <- 100
+X <- rnorm(N, mean = 15, sd = 3)
+error <- rnorm(N, 0, 2)
+Y <- beta1 + beta2*X + error
+data <- data.frame(X, Y)
+data %>% ggplot(aes(X, Y)) + 
+  geom_point()
+```
+
+What if X has already been transformed? What if log(EX) = X?
+
+$$e^{X} = EX$$
+
+```{r}
+data <- data %>% mutate(EX = exp(X))
+
+data %>% ggplot(aes(EX, Y)) +
+  geom_point()  +
+  scale_x_log10()
+```
+
+What if X has already been transformed? What if log(EY) = Y?
+
+$$e^{Y} = EY$$
+```{r}
+data <- data %>% mutate(EY = exp(Y))
+
+data %>% ggplot(aes(X, EY)) +
+  geom_point()  +
+  scale_y_log10()
+```
+
+What if both had already been transformed?
+
+```{r}
+data %>% ggplot(aes(EX, EY)) +
+  geom_point()  #+
+  #scale_y_log10() +
+  #scale_x_log10()
+```
+
+
+### Table 6.6
+
+
