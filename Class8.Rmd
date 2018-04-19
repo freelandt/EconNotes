@@ -1,0 +1,129 @@
+---
+title: "Class8"
+author: "Trevor Freeland"
+date: "April 19, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F)
+```
+
+```{r}
+library(tidyverse)
+library(MASS)
+library(stargazer)
+library(plotly)
+library(broom)
+```
+
+# Review of Day 04
+
+$$Y = \beta_1 + \beta_2*X + error$$
+
+$$error \sim N(0, \sigma^2)$$
+
+$$cov(X, error) = 0$$
+
+* The Sample Regression Function obtained by OLS is an unbiased estimator of the Population Regression Function
+* The variance of $\widehat{\beta_2}$ depends on the variance of the error terms, the variance of X, and the sample size.
+* The $\widehat{\beta_2}$ is normal under the right conditions.
+
+## What happens when we expand the Data Generating Process?
+
+Imagine that 
+
+$$Y = \beta_1 + \beta_2*X + \beta_3*W + error$$
+
+## Let's generate some population data
+
+```{r}
+set.seed(918276)
+varX <- 100; varError <- 100 
+varW <- 100; covXW <- 0
+(Sigmamatrix <- matrix(c(varX, covXW, 0, 
+                        covXW, varW, 0,
+                        0, 0, varError), 3, 3))
+population <- mvrnorm(n = 100, mu = c(40, 100, 0), Sigma = Sigmamatrix, 
+                      empirical = TRUE) %>% data.frame()
+names(population) <- c("X", "W", "error")
+ 
+beta1 <- 10; beta2 <- -1; beta3 <- 1
+population <- population %>% mutate(Y = beta1 + beta2*X + beta3*W + error)
+```
+
+## Let's summarize our data in a table
+```{r}
+stargazer(population, type = "text", digits = 1)
+```
+
+## Let's plot our population data.
+```{r}
+population %>% ggplot(aes(X, Y)) + 
+  geom_point() +
+  geom_smooth(method ='lm', se = FALSE, fullrange = TRUE) +
+  expand_limits(x = 0) +
+  labs(title = "Population Data") + 
+  theme_grey(base_size = 24)
+```
+
+```{r, fig.height=3, fig.width=3}
+plot_ly(population, x = ~X, y = ~W, z = ~Y) %>% add_markers()
+```
+
+
+## Can we predict the sampling distribution of $\widehat{\beta_2}$?
+
+Theory suggested in the two variable world it should be approximately normally distributed with a mean of $\beta_2$ and variance $\frac{\sigma^2}{n * var(X)}$.
+
+What will it be now?
+
+## Let's run a simulation to see
+```{r}
+set.seed(13579)
+sampleSize <- 25
+modeloutput <- lm(Y ~ X + W, data = population %>% sample_n(sampleSize)) %>% tidy
+
+for(i in 2:100) modeloutput <- lm(Y ~ X + W, 
+                                   data = population %>% sample_n(sampleSize)) %>% 
+  tidy %>% 
+  bind_rows(modeloutput)
+```
+
+```{r}
+modeloutput %>% filter(term == "X") %>% ggplot(aes(estimate)) +
+  geom_histogram(bins = 10)
+```
+
+```{r}
+modeloutput %>% filter(term == "X") %>% stargazer(type = "text")
+```
+
+```{r}
+sqrt(varError/(sampleSize*varX))
+```
+
+## Let's look at a particular sample
+
+```{r}
+set.seed(20180419)
+sampleData <- population %>% sample_n(sampleSize)
+stargazer(sampleData, type = "text")
+```
+
+and estimate a sample regression function
+```{r}
+sampleLm <- lm(Y ~ X + W, data = sampleData)
+summary(sampleLm)
+```
+
+
+The `stargazer` package can also create nicely formatted tables of regression output
+```{r}
+stargazer(sampleLm, type = "text")
+```
+
+
+
+
+
